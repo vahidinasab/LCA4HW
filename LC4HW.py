@@ -6,7 +6,7 @@ def load_logo():
     logo_path = "salford_logo.png"
     try:
         logo = Image.open(logo_path)
-        st.sidebar.image(logo, use_column_width=True)
+        st.sidebar.image(logo, use_container_width=True)
     except Exception:
         st.sidebar.error("❌ Logo not found. Please upload 'salford_logo.png'")
 
