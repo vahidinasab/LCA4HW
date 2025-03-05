@@ -6,7 +6,7 @@ def load_logo():
     logo_path = "salford_logo.png"
     try:
         logo = Image.open(logo_path)
-        st.sidebar.image(logo, use_container_width=True)
+        st.sidebar.image(logo, use_column_width=True)
     except Exception:
         st.sidebar.error("❌ Logo not found. Please upload 'salford_logo.png'")
 
@@ -42,23 +42,25 @@ if selection == "🏠 Main Calculator":
     cold_temp = 10  # Example default
     energy_needed = calculate_energy_needed(hot_temp, cold_temp, lpg_efficiency)
 
-    st.write(f"**⚡ Average Energy needed to heat a full hot water tank is equal to: {energy_needed*tank_size:.4f} kWh or {energy_needed*tank_size/lpg_energy_content:.4f} Litres of LPG")
+    st.write(f"**⚡ Average Energy needed to heat a full hot water tank is equal to: {energy_needed*tank_size:.2f} kWh or {energy_needed*tank_size/lpg_energy_content:.2f} Litres of LPG")
   
     st.subheader("💰 Economic Inputs")
     col1, col2, clo3 = st.columns(3)
     with col1:
-        lpg_price_pence = st.number_input("🔥 LPG Price (pence per Litre)", value=60.0, help="LPG price that is using for water heater") / 100
-        elec_price_pence = st.number_input("⚡ Electricity Price (pence per kWh)", value=15.0, help="Electricity price tariff that is using for water heater") / 100
+        lpg_price_pence = st.number_input("🔥 LPG Price (pence per Litre)", value=60.0, step=1.0, help="LPG price that is using for water heater") / 100
+        lpg_price_esc = st.number_input("🔥 LPG Price Escalation Rate (%)", value=4.0, step=0.1, help="LPG price Escalation Rate (%)") / 100
+        elec_price_pence = st.number_input("⚡ Electricity Price (pence per kWh)", value=15.0, step=1.0, help="Electricity price tariff that is using for water heater") / 100
+        elec_price_esc = st.number_input("⚡ Electricity Price Escalation Rate (%)", value=1.5, step=0.1, help="Electricity price tariff Escalation Rate (%)") / 100
 
     with col2:
-        project_lifetime = st.number_input("🕰️ Project Lifetime (years)", value=15)
+        project_lifetime = st.number_input("🕰️ Project Lifetime (years)", value=15, step=1)
         switching_cost = st.number_input("💵 Total Cost of Switching (£)", value=3000, step=50, help="Total cost of installing an electrified systems.")
     
     with col3:
         elec_price_pence_topup = st.number_input("⚡ Electricity Price (pence per kWh) for water heating during the day", value=25.0, help="Electricity price tariff that is using for the days of need for estra water heating during the day") / 100
         
-    st.write(f"**⚡ LPG Cost for each time the full tank is heated: {(energy_needed*tank_size*lpg_price_pence):.4f} GBP(£)**")
-    st.write(f"**⚡ Equivalent Electricity Cost for each time the full tank is heated: {(energy_needed*tank_size*elec_price_pence):.4f} GBP(£)**")
+    st.write(f"**🔥 LPG Cost for each time the full tank, here {tank_size}, is heated is: {(energy_needed*tank_size*lpg_price_pence):.2f} GBP(£)**")
+    st.write(f"**⚡ Equivalent Electricity Cost for each time the full tank, here {tank_size}, is heated in electric boiler system is: {(energy_needed*tank_size*elec_price_pence):.2f} GBP(£)**")
 
     st.subheader("🌍 Environmental Inputs")
     col1, col2 = st.columns(2)
@@ -74,42 +76,48 @@ if selection == "🏠 Main Calculator":
     hot_temp = st.number_input("🔥 Hot Water Temperature (°C)", value=65.0)
     efficiency = st.number_input("⚙️ Boiler Efficiency (decimal)", value=0.80, min_value=0.05, max_value=1.00)
     
-    def calculate_energy_needed(hot_temp, cold_temp, lpg_efficiency):
-        energy_needed = 4.18 * (hot_temp - cold_temp) / (lpg_efficiency * 3600)
+    def calculate_energy_needed(hot_temp, cold_temp, boiler_efficiency):
+        energy_needed = 4.18 * (hot_temp - cold_temp) / (boiler_efficiency * 3600)
         return energy_needed
 
-    if st.button("🚀 Calculate Energy per Liter"):
+    if st.button("🚀 Calculate Energy per Litre"):
         energy_per_liter = calculate_energy_needed(hot_temp, cold_temp, efficiency)
-        st.success(f"💡 Energy Required per Liter of Hot Water is: {energy_needed:.4f} kWh which is equivalent of {(energy_needed/7.08):.4f} litre of LPG")
+        st.success(f"💡 Energy Required per 100 Litre of Hot Water is: {100*efficiency*energy_per_liter:.2f} kWh of electricity in electric boiler or {(100*energy_per_liter/lpg_energy_content):.2f} litres of LPG")
     
-    # energy_per_liter = 0.06
-    annual_hot_water_kwh = tank_size * heating_days * energy_per_liter
-    annual_lpg_liters = annual_hot_water_kwh / (lpg_efficiency * lpg_energy_content)
+    # # energy_per_liter = 0.06
+    # annual_hot_water_kwh = tank_size * heating_days * energy_per_liter
+    # annual_lpg_liters = annual_hot_water_kwh / (lpg_efficiency * lpg_energy_content)
     
-
+#esc_rate is escalation rate for energy price
     def calculate_lifecycle_cost(price, esc_rate, required_energy, efficiency=1.0):
-        total_cost, current_price = 0, price
+        total_cost = 0
+        current_price = price
         for _ in range(project_lifetime):
             total_cost += (required_energy / efficiency) * current_price
             current_price *= (1 + esc_rate)
         return total_cost
     
-    lpg_lifecycle_cost = calculate_lifecycle_cost(lpg_price_pence, 0.04, annual_hot_water_kwh, lpg_efficiency)
-    elec_lifecycle_cost = calculate_lifecycle_cost(elec_price_pence, 0.015, annual_hot_water_kwh)
+    # energy_per_liter = 0.06
+    annual_hot_water_kwh = tank_size * heating_days * energy_per_liter * efficiency
+    annual_lpg_liters = annual_hot_water_kwh / (lpg_efficiency * lpg_energy_content)
+
+    lpg_lifecycle_cost = calculate_lifecycle_cost(lpg_price_pence, lpg_price_esc, annual_lpg_liters)
+    elec_lifecycle_cost = calculate_lifecycle_cost(elec_price_pence, elec_price_esc, annual_hot_water_kwh)
     
     # Results Display
     st.header("📊 Results")
-    st.write(f"💡 **Energy Cost per Liter of Hot Water:**")
-    st.write(f"🔥 LPG: £{(lpg_price_pence / (lpg_efficiency * lpg_energy_content)):.4f} per liter")
-    st.write(f"⚡ Electricity: £{(elec_price_pence / energy_per_liter):.4f} per liter")
-    st.write(f"💨 **Emissions per Liter of Hot Water:**")
-    st.write(f"🔥 LPG: {(carbon_emission_lpg / (lpg_efficiency * lpg_energy_content)):.4f} kg CO2 per liter")
-    st.write(f"⚡ Electricity: {(carbon_emission_elec * energy_per_liter):.4f} kg CO2 per liter")
+    st.write(f"💡 **Energy Cost for each tank of Hot Water:**")
+    st.write(f"🔥 LPG: £{tank_size*(lpg_price_pence / (lpg_efficiency * lpg_energy_content)):.2f} for each tank of hot water")
+    st.write(f"⚡ Electricity: £{tank_size*(elec_price_pence * energy_per_liter):.2f} for each tank of hot water")
+    st.write(f"💨 **Emissions for each tank of hot water:**")
+    st.write(f"🔥 LPG: {tank_size*(carbon_emission_lpg / (lpg_efficiency * lpg_energy_content)):.2f} kg CO2 for each tank of hot water")
+    st.write(f"⚡ Electricity: {tank_size*(carbon_emission_elec * energy_per_liter):.2f} kg CO2 for each tank of hot water")
     
+    st.header("📊 Life Cycle Results")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("🔥 LPG Lifecycle Cost (£)", f"{lpg_lifecycle_cost:,.2f}")
-        st.metric("⚡ Electricity Lifecycle Cost (£)", f"{elec_lifecycle_cost:,.2f}")
+        st.metric("🔥 LPG Lifecycle Cost (£)", f"{lpg_lifecycle_cost:,.2f}", delta=f"{lpg_lifecycle_cost/(project_lifetime*12):,.2f} per month")
+        st.metric("⚡ Electricity Lifecycle Cost (£)", f"{elec_lifecycle_cost:,.2f}", delta=f"{elec_lifecycle_cost/(project_lifetime*12):,.2f} per month")
     with col2:
         st.metric("💨 Annual Emissions LPG (kg CO2)", f"{annual_lpg_liters * carbon_emission_lpg:,.2f}")
         st.metric("💨 Annual Emissions Electricity (kg CO2)", f"{annual_hot_water_kwh * carbon_emission_elec:,.2f}")
@@ -117,7 +125,7 @@ if selection == "🏠 Main Calculator":
 elif selection == "🔥 Hot Water Energy Calculator":
     st.title("🔥 Hot Water Boiler Energy Calculator 💧")
     cold_temp = st.number_input("🌡️ Cold Water Temperature (°C)", value=10.0)
-    hot_temp = st.number_input("🔥 Hot Water Temperature (°C)", value=60.0)
+    hot_temp = st.number_input("🔥 Hot Water Temperature (°C)", value=65.0)
     efficiency = st.number_input("⚙️ Boiler Efficiency (decimal)", value=0.9, min_value=0.1, max_value=1.0)
     
     def calculate_energy_needed(hot_temp, cold_temp, lpg_efficiency):
@@ -126,7 +134,7 @@ elif selection == "🔥 Hot Water Energy Calculator":
 
     if st.button("🚀 Calculate Energy per Liter"):
         energy_needed = calculate_energy_needed(hot_temp, cold_temp, efficiency)
-        st.success(f"💡 Energy Required per Liter of Hot Water is: {energy_needed:.4f} kWh which is equivalent of {(energy_needed/7.08):.4f} litre of LPG")
+        st.success(f"💡 Energy Required per 100 Litres of Hot Water is: {100*energy_needed:.4f} kWh which is equivalent of {100*(energy_needed/7.08):.4f} litres of LPG")
 
 elif selection == "🏦 Loan Calculator":
     st.title("🏦 Loan Assessment")
