@@ -1,14 +1,18 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
+import pandas as pd
 
 def load_logo():
-    logo_path = "salford_logo.png"
+    logo_path = "V.png"
     try:
         logo = Image.open(logo_path)
         st.sidebar.image(logo, use_column_width=True)
     except Exception:
         st.sidebar.error("❌ Logo not found. Please upload 'salford_logo.png'")
+    # st.sidebar.markdown("---")  # Optional: Add a horizontal line for separation
+    st.sidebar.markdown("©2025 Vahid Vahidinasab. Follow me on: [LinkedIn](https://www.linkedin.com/in/vahid-vahidinasab/) | [GitHub](https://github.com/vahidinasab)", unsafe_allow_html=True)
+    st.sidebar.markdown("---")  # Optional: Add a horizontal line for separation
 
 st.set_page_config(layout="wide")
 load_logo()
@@ -80,10 +84,15 @@ if selection == "🏠 Main Calculator":
         energy_needed = 4.18 * (hot_temp - cold_temp) / (boiler_efficiency * 3600)
         return energy_needed
 
-    if st.button("🚀 Calculate Energy per Litre"):
-        energy_per_liter = calculate_energy_needed(hot_temp, cold_temp, efficiency)
-        st.success(f"💡 Energy Required per 100 Litre of Hot Water is: {100*efficiency*energy_per_liter:.2f} kWh of electricity in electric boiler or {(100*energy_per_liter/lpg_energy_content):.2f} litres of LPG")
+    # if st.button("🚀 Calculate Energy per Litre"):
+    #     energy_per_liter = calculate_energy_needed(hot_temp, cold_temp, efficiency)
+    #     st.success(f"💡 Energy Required per 100 Litre of Hot Water is: {100*efficiency*energy_per_liter:.2f} kWh of electricity in electric boiler or {(100*energy_per_liter/lpg_energy_content):.2f} litres of LPG")
     
+    # if st.button("🚀 Calculate Energy per Litre"):
+    energy_per_liter = calculate_energy_needed(hot_temp, cold_temp, efficiency)
+    st.metric("💡 Energy Required per 100 Litre of Hot Water", f"{100*efficiency*energy_per_liter:.2f} kWh of electricity in electric boiler or {(100*energy_per_liter/lpg_energy_content):.2f} litres of LPG")
+        # st.success(f"💡 Energy Required per 100 Litre of Hot Water is: {100*efficiency*energy_per_liter:.2f} kWh of electricity in electric boiler or {(100*energy_per_liter/lpg_energy_content):.2f} litres of LPG")
+
     # # energy_per_liter = 0.06
     # annual_hot_water_kwh = tank_size * heating_days * energy_per_liter
     # annual_lpg_liters = annual_hot_water_kwh / (lpg_efficiency * lpg_energy_content)
@@ -122,6 +131,40 @@ if selection == "🏠 Main Calculator":
         st.metric("💨 Annual Emissions LPG (kg CO2)", f"{annual_lpg_liters * carbon_emission_lpg:,.2f}")
         st.metric("💨 Annual Emissions Electricity (kg CO2)", f"{annual_hot_water_kwh * carbon_emission_elec:,.2f}")
 
+    # Display results in a table
+    results_data_table = {
+        "Metric": ["LPG Cost per Tank (£)", "Electricity Cost per Tank (£)", "LPG Emissions per Tank (kg CO2)", "Electricity Emissions per Tank (kg CO2)", 
+                "LPG Lifecycle Cost (£)", "Electricity Lifecycle Cost (£)", "Annual Emissions LPG (kg CO2)", "Annual Emissions Electricity (kg CO2)"],
+        "Value": [f"£{tank_size*(lpg_price_pence / (lpg_efficiency * lpg_energy_content)):.2f}", 
+                f"£{tank_size*(elec_price_pence * energy_per_liter):.2f}", 
+                f"{tank_size*(carbon_emission_lpg / (lpg_efficiency * lpg_energy_content)):.2f} kg", 
+                f"{tank_size*(carbon_emission_elec * energy_per_liter):.2f} kg", 
+                f"£{lpg_lifecycle_cost:,.2f}", 
+                f"£{elec_lifecycle_cost:,.2f}", 
+                f"{annual_lpg_liters * carbon_emission_lpg:,.2f} kg", 
+                f"{annual_hot_water_kwh * carbon_emission_elec:,.2f} kg"]
+    }
+
+    results_df_table = pd.DataFrame(results_data_table)
+    st.table(results_df_table)
+
+    # Display results in a bar chart
+    if st.button("🚀 Show the Results in a Bar-Chart Graph"):
+        results_data_graph = {
+            "Metric": ["LPG Boiler Lifecycle Cost (£)", "Electric Boiler Lifecycle Cost (£)"],
+            "Value": [lpg_lifecycle_cost, 
+                    elec_lifecycle_cost 
+                    # project_lifetime * annual_lpg_liters * carbon_emission_lpg, 
+                    # project_lifetime * annual_hot_water_kwh * carbon_emission_elec
+                    ]
+        }  
+        
+        results_df_graph = pd.DataFrame(results_data_graph)
+        st.success("Results in a Bar-Chart Graph!")
+        st.bar_chart(results_df_graph.set_index("Metric"))
+        # st.bar_chart(results_df_graph.set_index("Metric").T)
+
+
 elif selection == "🔥 Hot Water Energy Calculator":
     st.title("🔥 Hot Water Boiler Energy Calculator 💧")
     cold_temp = st.number_input("🌡️ Cold Water Temperature (°C)", value=10.0)
@@ -149,3 +192,6 @@ elif selection == "🏦 Loan Calculator":
     
     monthly_payment = calculate_loan_payment(loan_amount, interest_rate, loan_term)
     st.metric("💳 Monthly Loan Payment (£)", f"{monthly_payment:,.2f}")
+
+
+
