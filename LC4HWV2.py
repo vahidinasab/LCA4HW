@@ -261,7 +261,14 @@ if selection == "🏠 Main Calculator":
     st.markdown(f"**{cheapest_system} is the most cost-effective choice over {project_lifetime} years.**")
     st.markdown(f"This is based on a total estimated cost of **£{total_costs[cheapest_system]:,.2f}**, including installation and energy expenses.")
 
-
+    # Would youlike to know how much is the average cost of taking a shower in the UK?
+    st.markdown("---")  # Optional: Add a horizontal line for separation
+    st.subheader("🚿 Average Cost of Taking a Shower with such a system in the UK:")
+    # shower_cost = 10*9*(cost_per_litre+water_waste_water_per_litre)  # Average cost of taking a shower in the UK
+    # st.markdown(f"💰 The average cost of taking a shower in the UK is **£{shower_cost:.2f}**."
+    #             f" This is based on a 10-minute shower with a flow rate of 9 litres per minute.")
+    
+    
     # # Export selected data to CSV
     # combined_df = pd.concat([results[system].assign(System=system) for system in selected_systems])
     # csv = combined_df.to_csv(index=False)
